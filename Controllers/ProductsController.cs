@@ -6,9 +6,10 @@ namespace ProductsCRUD_API.Controllers;
 
 [ApiController]
 [Route("api/products")]
-public class ProductsController(ProductRepository repository) : ControllerBase
+public class ProductsController(ProductRepository repository, IConfiguration configuration) : ControllerBase
 {
     private const int MaxPageSize = 100;
+    private readonly int _maxBatchSize = configuration.GetValue<int>("BulkInsert:MaxBatchSize");
 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
@@ -46,5 +47,22 @@ public class ProductsController(ProductRepository repository) : ControllerBase
     {
         var deleted = await repository.DeleteAsync(id);
         return deleted ? NoContent() : NotFound();
+    }
+
+    [HttpPost("bulk")]
+    public async Task<IActionResult> BulkCreate([FromBody] List<ProductCreateDto> products)
+    {
+        if (products.Count == 0)
+        {
+            return BadRequest("The batch cannot be empty.");
+        }
+
+        if (products.Count > _maxBatchSize)
+        {
+            return BadRequest($"The batch exceeds the maximum of {_maxBatchSize} items.");
+        }
+
+        var inserted = await repository.BulkCreateAsync(products);
+        return Created(string.Empty, new { inserted, strategy = "TVP" });
     }
 }

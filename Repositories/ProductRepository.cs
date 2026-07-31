@@ -1,3 +1,5 @@
+using System.Data;
+using Dapper;
 using ProductsCRUD_API.Dtos;
 using ProductsCRUD_API.Models;
 
@@ -33,5 +35,21 @@ public class ProductRepository(Db db)
     {
         var rowsAffected = await db.QuerySingleAsync<int>("dbo.sp_Product_Delete", new { Id = id });
         return rowsAffected > 0;
+    }
+
+    public Task<int> BulkCreateAsync(IEnumerable<ProductCreateDto> products)
+    {
+        var table = new DataTable();
+        table.Columns.Add("Name", typeof(string));
+        table.Columns.Add("Description", typeof(string));
+        table.Columns.Add("Price", typeof(decimal));
+
+        foreach (var product in products)
+        {
+            table.Rows.Add(product.Name, (object?)product.Description ?? DBNull.Value, product.Price);
+        }
+
+        var parameters = new { Products = table.AsTableValuedParameter("dbo.ProductTableType") };
+        return db.QuerySingleAsync<int>("dbo.sp_Product_BulkCreate", parameters);
     }
 }
