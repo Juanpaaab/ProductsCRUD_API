@@ -1,6 +1,89 @@
 @ProductsCRUD_API_HostAddress = http://localhost:5146
 
-GET {{ProductsCRUD_API_HostAddress}}/weatherforecast/
+### Get all products (default pagination)
+GET {{ProductsCRUD_API_HostAddress}}/api/products
 Accept: application/json
 
-###
+### Get all products (explicit pagination)
+GET {{ProductsCRUD_API_HostAddress}}/api/products?page=1&pageSize=5
+Accept: application/json
+
+### Get all products (pageSize above the allowed max, gets clamped to 100)
+GET {{ProductsCRUD_API_HostAddress}}/api/products?page=1&pageSize=9999
+Accept: application/json
+
+### Get product by id
+GET {{ProductsCRUD_API_HostAddress}}/api/products/1
+Accept: application/json
+
+### Get product by id (not found)
+GET {{ProductsCRUD_API_HostAddress}}/api/products/999999
+Accept: application/json
+
+### Create product
+POST {{ProductsCRUD_API_HostAddress}}/api/products
+Content-Type: application/json
+
+{
+  "name": "Keyboard",
+  "description": "Mechanical keyboard",
+  "price": 89.90
+}
+
+### Create product (validation error: negative price)
+POST {{ProductsCRUD_API_HostAddress}}/api/products
+Content-Type: application/json
+
+{
+  "name": "Bad Product",
+  "price": -5
+}
+
+### Update product
+PUT {{ProductsCRUD_API_HostAddress}}/api/products/1
+Content-Type: application/json
+
+{
+  "name": "Mechanical Keyboard",
+  "description": "Updated description",
+  "price": 99.90
+}
+
+### Update product (not found)
+PUT {{ProductsCRUD_API_HostAddress}}/api/products/999999
+Content-Type: application/json
+
+{
+  "name": "Ghost Product",
+  "price": 1
+}
+
+### Delete product
+DELETE {{ProductsCRUD_API_HostAddress}}/api/products/1
+
+### Delete product (not found / already deleted)
+DELETE {{ProductsCRUD_API_HostAddress}}/api/products/1
+
+### Bulk create products (small sample, uses the TVP strategy)
+POST {{ProductsCRUD_API_HostAddress}}/api/products/bulk
+Content-Type: application/json
+
+[
+  { "name": "Monitor", "description": "27-inch", "price": 199.99 },
+  { "name": "Webcam", "description": null, "price": 45.00 },
+  { "name": "Headset", "description": null, "price": 60.00 }
+]
+
+### Bulk create products (empty batch, validation error)
+POST {{ProductsCRUD_API_HostAddress}}/api/products/bulk
+Content-Type: application/json
+
+[]
+
+### GitHub user lookup
+GET {{ProductsCRUD_API_HostAddress}}/api/github/octocat
+Accept: application/json
+
+### GitHub user lookup (not found)
+GET {{ProductsCRUD_API_HostAddress}}/api/github/this-user-should-not-exist-xyz
+Accept: application/json
