@@ -10,6 +10,7 @@ public class ProductsController(ProductRepository repository, IConfiguration con
 {
     private const int MaxPageSize = 100;
     private readonly int _maxBatchSize = configuration.GetValue<int>("BulkInsert:MaxBatchSize");
+    private readonly int _sqlBulkCopyThreshold = configuration.GetValue<int>("BulkInsert:SqlBulkCopyThreshold");
 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
@@ -50,6 +51,7 @@ public class ProductsController(ProductRepository repository, IConfiguration con
     }
 
     [HttpPost("bulk")]
+    [RequestSizeLimit(100_000_000)]
     public async Task<IActionResult> BulkCreate([FromBody] List<ProductCreateDto> products)
     {
         if (products.Count == 0)
@@ -60,6 +62,12 @@ public class ProductsController(ProductRepository repository, IConfiguration con
         if (products.Count > _maxBatchSize)
         {
             return BadRequest($"The batch exceeds the maximum of {_maxBatchSize} items.");
+        }
+
+        if (products.Count > _sqlBulkCopyThreshold)
+        {
+            var insertedViaBulkCopy = await repository.BulkCreateViaStagingAsync(products);
+            return Created(string.Empty, new { inserted = insertedViaBulkCopy, strategy = "BulkCopy" });
         }
 
         var inserted = await repository.BulkCreateAsync(products);
