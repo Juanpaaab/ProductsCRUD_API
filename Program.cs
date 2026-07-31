@@ -10,6 +10,12 @@ builder.Services.AddOpenApi();
 builder.Services.AddScoped<Db>();
 builder.Services.AddScoped<ProductRepository>();
 
+builder.Services.AddHttpClient("GitHub", client =>
+{
+    client.BaseAddress = new Uri("https://api.github.com/");
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("ProductsCRUD-API");
+});
+
 var app = builder.Build();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
