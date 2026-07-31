@@ -1,5 +1,15 @@
+IF NOT EXISTS (SELECT 1 FROM sys.databases WHERE name = 'ProductsCRUD')
+BEGIN
+    CREATE DATABASE ProductsCRUD;
+END
+GO
 
-CREATE TABLE dbo.Products (
+USE ProductsCRUD;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Products')
+BEGIN
+    CREATE TABLE dbo.Products (
         Id          INT             IDENTITY(1,1)             NOT NULL,
         Name        NVARCHAR(100)                             NOT NULL,
         Description NVARCHAR(500)                                 NULL,
@@ -9,7 +19,11 @@ CREATE TABLE dbo.Products (
         CONSTRAINT PK_Products PRIMARY KEY (Id),
         CONSTRAINT CK_Products_Price CHECK (Price >= 0)
     );
+END
+GO
 
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Products_Staging')
+BEGIN
     --Staging table for bulk insert
     CREATE TABLE dbo.Products_Staging (
         BatchId     UNIQUEIDENTIFIER NOT NULL,
@@ -17,17 +31,22 @@ CREATE TABLE dbo.Products (
         Description NVARCHAR(500)        NULL,
         Price       DECIMAL(18,2)    NOT NULL
     );
+
     --Index for faster retrieval of staging data by BatchId
     CREATE INDEX IX_ProductsStaging_BatchId ON dbo.Products_Staging (BatchId);
-    
+END
+GO
 
+IF NOT EXISTS (SELECT 1 FROM sys.types WHERE is_table_type = 1 AND name = 'ProductTableType')
+BEGIN
     --Type for bulk insert
     CREATE TYPE dbo.ProductTableType AS TABLE (
         Name        NVARCHAR(100)    NOT NULL,
         Description NVARCHAR(500)        NULL,
         Price       DECIMAL(18,2)    NOT NULL
     );
-
+END
+GO
 
 --SPs
 
@@ -50,6 +69,7 @@ BEGIN
         THROW;
     END CATCH
 END;
+GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_Product_GetById
     @Id INT
@@ -61,7 +81,7 @@ BEGIN
     WHERE  Id = @Id
       AND  IsActive = 1;
 END;
-
+GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_Product_GetAll
     @PageNumber INT = 1,
@@ -80,7 +100,8 @@ BEGIN
     SELECT COUNT(*) AS TotalCount
     FROM   dbo.Products
     WHERE  IsActive = 1;
-END:
+END;
+GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_Product_Update
     @Id          INT,
@@ -107,6 +128,7 @@ BEGIN
         THROW;
     END CATCH
 END;
+GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_Product_Delete
     @Id INT
@@ -125,6 +147,7 @@ BEGIN
         THROW;
     END CATCH
 END;
+GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_Product_BulkCreate
     @Products dbo.ProductTableType READONLY
@@ -142,6 +165,7 @@ BEGIN
         THROW;
     END CATCH
 END;
+GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_Product_BulkCreate_FromStaging
     @BatchId UNIQUEIDENTIFIER
@@ -165,3 +189,4 @@ BEGIN
         THROW;
     END CATCH
 END;
+GO
